@@ -11,6 +11,7 @@ anyhow = "1.0.95"
 clap = { version = "4.5.30", features = ["derive"] }
 image = "0.25.5"
 log = "0.4.25"
+native-dialog = "0.7.0"
 serde = { version = "1.0.217", features = ["derive"] }
 tempfile = "3.17.1"
 

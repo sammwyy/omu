@@ -1,4 +1,7 @@
-use crate::utils::{audio_codec_by_ext, create_temp_file, ext_by_filename, run_ffmpeg_command};
+use crate::utils::{
+    audio_codec_by_ext, create_temp_file, ext_by_filename, get_file_arg, run_ffmpeg_command,
+    FileType,
+};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::{fs::File, io::Write, path::PathBuf};
@@ -43,14 +46,13 @@ pub struct ExtractAudioArgs {
     #[arg(short, long)]
     pub input: PathBuf,
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
 }
 
 impl ExtractAudioArgs {
     pub fn execute(&self) -> Result<()> {
-        let output_path = self.output.to_str().unwrap();
-        let output_path_buf = PathBuf::from(output_path);
-        let output_ext = output_path_buf
+        let output = get_file_arg(FileType::Audio, &self.output)?;
+        let output_ext = output
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
@@ -64,7 +66,7 @@ impl ExtractAudioArgs {
             "-acodec",
             codec,
             "-y",
-            output_path,
+            output.to_str().unwrap(),
         ];
 
         if codec == "pcm_s16le" {
@@ -80,11 +82,14 @@ pub struct MuteVideoArgs {
     #[arg(short, long)]
     input: PathBuf,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
 }
 
 impl MuteVideoArgs {
     fn execute(&self) -> Result<()> {
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Video, &self.output)?;
+
         let args = [
             "-i",
             self.input.to_str().unwrap(),
@@ -92,8 +97,9 @@ impl MuteVideoArgs {
             "-c:v",
             "copy",
             "-y",
-            self.output.to_str().unwrap(),
+            output.to_str().unwrap(),
         ];
+
         run_ffmpeg_command(&args)
     }
 }
@@ -103,7 +109,7 @@ pub struct TrimArgs {
     #[arg(short, long)]
     pub input: PathBuf,
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
     #[arg(short, long, help = "Start time in seconds or HH:MM:SS format")]
     pub start: Option<String>,
     #[arg(short, long, help = "End time in seconds or HH:MM:SS format")]
@@ -113,6 +119,9 @@ pub struct TrimArgs {
 impl TrimArgs {
     pub fn execute(&self) -> Result<()> {
         let mut args = vec!["-i", self.input.to_str().unwrap()];
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Video, &self.output)?;
 
         if let Some(start) = &self.start {
             args.push("-ss");
@@ -124,8 +133,7 @@ impl TrimArgs {
             args.push(end);
         }
 
-        args.extend(&["-c", "copy", "-y", self.output.to_str().unwrap()]);
-
+        args.extend(&["-c", "copy", "-y", output.to_str().unwrap()]);
         run_ffmpeg_command(&args)
     }
 }
@@ -135,7 +143,7 @@ pub struct CutArgs {
     #[arg(short, long)]
     input: PathBuf,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
     #[arg(short, long, help = "Start cut point in seconds or HH:MM:SS format")]
     start: String,
     #[arg(short, long, help = "End cut point in seconds or HH:MM:SS format")]
@@ -147,8 +155,9 @@ impl CutArgs {
         let start = &self.start;
         let end = &self.end;
         let input_path = self.input.to_str().unwrap();
-        let output_path = self.output.to_str().unwrap();
 
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Video, &self.output)?;
         let extension = ext_by_filename(input_path).unwrap_or_else(|| "mp4".to_string());
 
         let temp_file_1_with_ext = create_temp_file(&extension);
@@ -195,7 +204,7 @@ impl CutArgs {
             "-c",
             "copy",
             "-y",
-            output_path,
+            output.to_str().unwrap(),
         ];
         run_ffmpeg_command(&concat_args)?;
         Ok(())
@@ -209,7 +218,7 @@ pub struct ReplaceAudioArgs {
     #[arg(short, long)]
     audio: PathBuf,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
 }
 
 impl ReplaceAudioArgs {
@@ -220,6 +229,9 @@ impl ReplaceAudioArgs {
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
         let codec = audio_codec_by_ext(audio_ext).unwrap_or("aac");
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Video, &self.output)?;
 
         let mut args = vec![
             "-i",
@@ -236,7 +248,7 @@ impl ReplaceAudioArgs {
             "1:a:0",
             "-shortest",
             "-y",
-            self.output.to_str().unwrap(),
+            output.to_str().unwrap(),
         ];
 
         if codec == "pcm_s16le" {
@@ -254,7 +266,7 @@ pub struct CombineVideoArgs {
     #[arg(short, long)]
     inputs: Vec<PathBuf>,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
     #[arg(short, long, help = "Combine mode: horizontal, vertical, or overlay")]
     mode: String,
 }
@@ -303,6 +315,9 @@ impl CombineVideoArgs {
             _ => anyhow::bail!("Invalid combine mode. Use horizontal, vertical, or overlay"),
         };
 
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Video, &self.output)?;
+
         // Audio filter
         let audio_filter = (0..self.inputs.len())
             .map(|i| format!("[{}:a]", i)) // Add audio tracks
@@ -331,8 +346,8 @@ impl CombineVideoArgs {
         args.push("-map");
         args.push("[a]");
         args.push("-y");
-        args.push(self.output.to_str().unwrap());
 
+        args.push(output.to_str().unwrap());
         run_ffmpeg_command(&args)
     }
 }

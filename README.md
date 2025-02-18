@@ -42,7 +42,7 @@
 - **Video:**
   - `MP4`, `WEBM`, `MKV`, `AVI`, `MOV`, `MPEG`, `MPEGTS`
 - **Image:**
-  - `JPG`, `PNG`, `WEBP`, `GIF`, `BMP`, `JPEG`, `TIFF`, `SVG`, `ICO`, `ICNS`, `ICO`
+  - `JPG`, `PNG`, `WEBP`, `GIF`, `BMP`, `JPEG`, `TIFF`, `SVG`, `ICO`, `ICNS`
 
 ---
 

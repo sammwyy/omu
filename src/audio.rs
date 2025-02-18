@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::{path::PathBuf, process::Command};
 
-use crate::utils::run_ffmpeg_command;
+use crate::utils::{get_file_arg, run_ffmpeg_command, FileType};
 
 #[derive(Subcommand)]
 pub enum AudioCommand {
@@ -30,7 +30,7 @@ pub struct CombineAudioArgs {
 
     /// Output file path
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
 }
 
 impl CombineAudioArgs {
@@ -42,6 +42,9 @@ impl CombineAudioArgs {
             ffmpeg_args.push("-i");
             ffmpeg_args.push(input.to_str().unwrap());
         }
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Audio, &self.output)?;
 
         // Complex filter to concatenate audios
         ffmpeg_args.push("-filter_complex");
@@ -57,7 +60,7 @@ impl CombineAudioArgs {
         ffmpeg_args.push("[out]");
 
         // Output file
-        ffmpeg_args.push(self.output.to_str().unwrap());
+        ffmpeg_args.push(output.to_str().unwrap());
 
         run_ffmpeg_command(&ffmpeg_args)
     }
@@ -71,7 +74,7 @@ pub struct VolumeArgs {
 
     /// Output file path
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
 
     /// Volume multiplier (e.g., 0.5 for half volume, 2.0 for double)
     #[arg(short, long)]
@@ -80,13 +83,16 @@ pub struct VolumeArgs {
 
 impl VolumeArgs {
     pub fn execute(&self) -> Result<()> {
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Audio, &self.output)?;
+
         let args = [
             "-i",
             self.input.to_str().unwrap(),
             "-filter:a",
             &format!("volume={}", self.volume),
             "-y",
-            self.output.to_str().unwrap(),
+            output.to_str().unwrap(),
         ];
 
         run_ffmpeg_command(&args)

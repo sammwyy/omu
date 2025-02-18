@@ -12,7 +12,7 @@ fn test_extract_audio_from_video() {
     // Perform the audio extraction.
     let args = ExtractAudioArgs {
         input: input.to_path_buf(),
-        output: output.clone(),
+        output: Some(output.clone()),
     };
     args.execute().unwrap();
 
@@ -35,7 +35,7 @@ fn test_trim_video() {
     // Perform the video trimming.
     let args = TrimArgs {
         input: input.to_path_buf(),
-        output: output.clone(),
+        output: Some(output.clone()),
         start: Some("00:00:01".to_string()),
         end: Some("00:00:03".to_string()),
     };

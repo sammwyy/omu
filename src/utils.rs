@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use native_dialog::FileDialog;
 use std::{
     fs::File,
     io::Read,
@@ -49,4 +50,47 @@ pub fn create_temp_file(extension: &String) -> PathBuf {
     let temp_file = tempfile::NamedTempFile::new().unwrap();
     let temp_file_with_ext = temp_file.path().with_extension(extension);
     temp_file_with_ext
+}
+
+#[derive(Clone, Debug)]
+pub enum FileType {
+    Video,
+    Image,
+    Audio,
+}
+
+const VIDEO_EXTENSIONS: [&str; 7] = ["mp4", "webm", "mkv", "avi", "mov", "mpeg", "mpegts"];
+const IMAGE_EXTENSIONS: [&str; 10] = [
+    "jpg", "png", "webp", "gif", "bmp", "jpeg", "tiff", "svg", "ico", "icns",
+];
+const AUDIO_EXTENSIONS: [&str; 7] = ["mp3", "wav", "aac", "flac", "ogg", "opus", "m4a"];
+
+pub fn open_file_dialog(file_type: FileType) -> Option<PathBuf> {
+    let mut dialog = FileDialog::new().set_title("Select a file");
+
+    match file_type {
+        FileType::Video => dialog = dialog.add_filter("Video Files", &VIDEO_EXTENSIONS),
+        FileType::Image => dialog = dialog.add_filter("Image Files", &IMAGE_EXTENSIONS),
+        FileType::Audio => dialog = dialog.add_filter("Audio Files", &AUDIO_EXTENSIONS),
+    }
+
+    dialog.show_save_single_file().unwrap_or(None)
+}
+
+pub fn get_file_arg(file_type: FileType, arg: &Option<PathBuf>) -> Result<PathBuf> {
+    match arg {
+        Some(path) => Ok(path.to_path_buf()),
+        None => open_file_dialog(file_type).context("Failed to open file dialog"),
+    }
+}
+
+pub fn file_type_from_extension(extension: &str) -> Result<FileType> {
+    match extension {
+        "mp4" | "webm" | "mkv" | "avi" | "mov" | "mpeg" | "mpegts" => Ok(FileType::Video),
+        "jpg" | "png" | "webp" | "gif" | "bmp" | "jpeg" | "tiff" | "svg" | "ico" | "icns" => {
+            Ok(FileType::Image)
+        }
+        "mp3" | "wav" | "aac" | "flac" | "ogg" | "opus" | "m4a" => Ok(FileType::Audio),
+        _ => Err(anyhow::anyhow!("Unsupported file type: {}", extension)),
+    }
 }

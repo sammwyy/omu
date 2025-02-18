@@ -13,7 +13,7 @@ fn test_combine_audios() {
     // Perform the audio combination.
     let args = CombineAudioArgs {
         inputs: vec![input1.to_path_buf(), input2.to_path_buf()],
-        output: output.clone(),
+        output: Some(output.clone()),
     };
     args.execute().unwrap();
 
@@ -36,7 +36,7 @@ fn test_change_audio_volume() {
     // Perform the volume change.
     let args = VolumeArgs {
         input: input.to_path_buf(),
-        output: output.clone(),
+        output: Some(output.clone()),
         volume: 2.0,
     };
     args.execute().unwrap();

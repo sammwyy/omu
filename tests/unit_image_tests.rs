@@ -14,7 +14,7 @@ fn test_overlay_images() {
     let args = OverlayArgs {
         input: base.to_path_buf(),
         overlay: overlay.to_path_buf(),
-        output: output.clone(),
+        output: Some(output.clone()),
         x: 50,
         y: 50,
     };
@@ -39,7 +39,7 @@ fn test_apply_grayscale_filter() {
     // Perform the grayscale filter application.
     let args = FilterArgs {
         input: input.to_path_buf(),
-        output: output.clone(),
+        output: Some(output.clone()),
         filter: "grayscale".to_string(),
         intensity: None,
     };

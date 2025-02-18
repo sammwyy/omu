@@ -3,6 +3,8 @@ use clap::{Args, Subcommand};
 use image::{imageops, DynamicImage, GenericImageView, RgbImage, RgbaImage};
 use std::path::PathBuf;
 
+use crate::utils::{get_file_arg, FileType};
+
 #[derive(Subcommand)]
 pub enum ImageCommand {
     /// Overlay one image on top of another
@@ -40,7 +42,7 @@ pub struct OverlayArgs {
     #[arg(short = 'l', long)]
     pub overlay: PathBuf,
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
     #[arg(long, help = "X position for overlay", default_value_t = 0)]
     pub x: i64,
     #[arg(long, help = "Y position for overlay", default_value_t = 0)]
@@ -52,7 +54,10 @@ impl OverlayArgs {
         let base = image::open(&self.input)?;
         let overlay = image::open(&self.overlay)?;
         let result = overlay_images(&base, &overlay, self.x, self.y);
-        result.save(&self.output)?;
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Image, &self.output)?;
+        result.save(&output)?;
         Ok(())
     }
 }
@@ -68,7 +73,7 @@ pub struct CombineArgs {
     #[arg(short, long)]
     inputs: Vec<PathBuf>,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
     #[arg(short, long, help = "Combine mode: horizontal or vertical")]
     mode: String,
 }
@@ -91,17 +96,20 @@ impl CombineArgs {
             _ => anyhow::bail!("Invalid mode. Use 'horizontal' or 'vertical'."),
         };
 
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Image, &self.output)?;
+
         // Save the image based on the output file extension and alpha channel
         let has_alpha = has_alpha_channel(&images);
-        match self.output.extension().and_then(|ext| ext.to_str()) {
+        match output.extension().and_then(|ext| ext.to_str()) {
             Some("png") | Some("webp") if has_alpha => {
                 // Save with alpha channel for PNG and WEBP
-                result.save(&self.output)?;
+                result.save(&output)?;
             }
             _ => {
                 // Convert to RGB for formats that don't support alpha (e.g., JPEG)
                 let rgb_image = result.to_rgb8();
-                DynamicImage::ImageRgb8(rgb_image).save(&self.output)?;
+                DynamicImage::ImageRgb8(rgb_image).save(&output)?;
             }
         }
 
@@ -188,7 +196,7 @@ pub struct FilterArgs {
     #[arg(short, long)]
     pub input: PathBuf,
     #[arg(short, long)]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
     #[arg(
         short,
         long,
@@ -209,7 +217,10 @@ impl FilterArgs {
             "blur" => apply_blur(&img, self.intensity.unwrap_or(1.0)),
             _ => anyhow::bail!("Invalid filter type."),
         };
-        result.save(&self.output)?;
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Image, &self.output)?;
+        result.save(&output)?;
         Ok(())
     }
 }
@@ -250,7 +261,7 @@ pub struct ReshapeArgs {
     #[arg(short, long)]
     input: PathBuf,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
     #[arg(long, help = "Shape type: circle, square, rounded")]
     shape: String,
     #[arg(long, help = "Border radius for rounded shape")]
@@ -266,7 +277,10 @@ impl ReshapeArgs {
             "rounded" => reshape_rounded(&img, self.radius.unwrap_or(30)),
             _ => anyhow::bail!("Invalid shape type."),
         };
-        result.save(&self.output)?;
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Image, &self.output)?;
+        result.save(&output)?;
         Ok(())
     }
 }
@@ -337,7 +351,7 @@ pub struct CreateVideoArgs {
     #[arg(short, long)]
     input: PathBuf,
     #[arg(short, long)]
-    output: PathBuf,
+    output: Option<PathBuf>,
     #[arg(long, help = "Duration of the video in seconds")]
     duration: u32,
 }
@@ -345,7 +359,10 @@ pub struct CreateVideoArgs {
 impl CreateVideoArgs {
     fn execute(&self) -> Result<()> {
         let img = image::open(&self.input)?;
-        create_video_from_image(&img, &self.output, self.duration)
+
+        // Get output or prompt for one
+        let output = get_file_arg(FileType::Image, &self.output)?;
+        create_video_from_image(&img, &output, self.duration)
     }
 }
 

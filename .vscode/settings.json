@@ -6,11 +6,13 @@
     "ffprobe",
     "flac",
     "hstack",
+    "icns",
     "imageops",
     "libmp",
     "libopus",
     "libvorbis",
     "libx",
+    "mpegts",
     "nokey",
     "noprint",
     "vstack"
