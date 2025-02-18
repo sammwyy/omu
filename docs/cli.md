@@ -12,6 +12,8 @@ The basic CLI structure is:
 ./omu <command> <subcommand> [arguments]
 ```
 
+> Note: Output files will be overwritten if they already exist. Also if there is not output specified, the tool will prompt for one using OS native dialogues.
+
 ---
 
 ## Available Commands
